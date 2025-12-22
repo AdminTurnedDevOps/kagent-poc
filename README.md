@@ -10,6 +10,12 @@ This POC contains test cases around:
 
 ## MCP Connectivity
 
+The **MCP Connectivity** section will consist of 4 scenarios:
+1. Building/running your own Streamable HTTP MCP server
+2. Authenticating to MCP servers
+3. Locking down tools within MCP servers
+4. Connecting to remote MCP Servers
+
 ### MCP Server Connection
 
 1. . Deploy the MCP Server (Streamable HTTP)
@@ -432,6 +438,11 @@ kubectl get agents -n kagent
 
 ## Agentic Routing and Agent Creation/Management
 
+This section consists of four scenarios:
+1. Using kagent to run agents and route agentic traffic route through agentgateway as the AI gateway
+2. Prompt guards/guardrails
+3. Rate limiting/token based rate limiting
+4. Deploying and using custom LLMs/Models in kagent
 
 ### Route Agent Traffic Through Agentgateway
 
@@ -862,6 +873,9 @@ Once you do, you can test it out. Please note that to get a response, it might b
 
 ## Agentic Monitoring and Observability
 
+This section consists of one scenario:
+1. Using grafana/prometheus to capture and view agentgateway metrics
+
 ### Kube-Prometheus Install
 
 1. Install the Helm Chart
@@ -892,14 +906,14 @@ kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
 
 1. Deploy a Pod Monitor
 
-The `PodMonitor` selector matches `gateway.networking.k8s.io/gateway-class-name: agentgateway`, which will match any Gateway that uses the agentgateway GatewayClass
+The `PodMonitor` selector matches `gateway.networking.k8s.io/gateway-class-name: agentgateway-enterprise`, which will match any Gateway that uses the agentgateway GatewayClass
 ```
 kubectl apply -f - <<EOF
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: agentgateway
-  namespace: monitoring
+  namespace: gloo-system
   labels:
     app: agentgateway
     release: kube-prometheus
@@ -916,3 +930,5 @@ EOF
 ```
 
 2. Check the dashboard for metrics under the **Explore** tab
+
+![](images/metrics.png)
