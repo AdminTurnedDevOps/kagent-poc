@@ -1,5 +1,7 @@
 # Kagent POC
 
+![](images/headline.png)
+
 This POC contains test cases around:
 1. MCP connectivity/security
 2. Agentic AI (creating/managing Agents) and Agent security
