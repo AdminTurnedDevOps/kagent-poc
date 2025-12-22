@@ -871,6 +871,33 @@ Once you do, you can test it out. Please note that to get a response, it might b
 
 ![](images/date.png)
 
+### Custom CA Configs
+
+1. Create a k8s secret based on your CA certs
+```
+kubectl -n kagent create secret generic llm-certs \
+  --from-file=ca.crt=ca.crt
+```
+
+2. Add the custom TLS configuration within the Model config
+```
+kubectl apply -f - <<EOF
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: llama3-model-config
+  namespace: kagent
+spec:
+  model: llama3
+  provider: Ollama
+  ollama:
+    host: http://ollama.ollama.svc.cluster.local:80
+  tls:
+    caCertSecretRef: llm-certs
+    caCertSecretKey: ca.crt
+EOF
+```
+
 ## Agentic Monitoring and Observability
 
 This section consists of one scenario:
