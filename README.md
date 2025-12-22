@@ -959,3 +959,16 @@ EOF
 2. Check the dashboard for metrics under the **Explore** tab
 
 ![](images/metrics.png)
+
+## Building Agents For Specific Tasks
+
+This section contains two key scenarios that we're seeing in the market:
+1. An Agent that can be your SRE/Platform Engineering assist
+2. Autonomous Agentic Workflows (self-healing cluster in this scenario)
+
+### SRE/Platform Engineering Agent
+
+WIP
+### Self-Healing Cluster Scenario
+
+WIP
