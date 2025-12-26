@@ -257,94 +257,6 @@ npx modelcontextprotocol/inspector#0.16.2
 
 URL to put into Inspector: `http://YOUR_ALB_LB_IP:8080/mcp`
 
-
-### Secure Connectivity To An MCP Server (StreamableHTTP)
-
-1. Add in a traffic policy for auth based on a JWT token
-```
-kubectl apply -f- <<EOF
-apiVersion: gloo.solo.io/v1alpha1
-kind: GlooTrafficPolicy
-metadata:
-  name: jwt
-  namespace: gloo-system
-spec:
-  targetRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: agentgateway
-  glooJWT:
-    beforeExtAuth:
-      providers:
-        selfminted:
-          issuer: solo.io
-          jwks:
-            local:
-              key: '{"keys":[{"kty":"RSA","kid":"solo-public-key-001","use":"sig","alg":"RS256","n":"AOfIaJMUm7564sWWNHaXt_hS8H0O1Ew59-nRqruMQosfQqa7tWne5lL3m9sMAkfa3Twx0LMN_7QqRDoztvV3Wa_JwbMzb9afWE-IfKIuDqkvog6s-xGIFNhtDGBTuL8YAQYtwCF7l49SMv-GqyLe-nO9yJW-6wIGoOqImZrCxjxXFzF6mTMOBpIODFj0LUZ54QQuDcD1Nue2LMLsUvGa7V1ZHsYuGvUqzvXFBXMmMS2OzGir9ckpUhrUeHDCGFpEM4IQnu-9U8TbAJxKE5Zp8Nikefr2ISIG2Hk1K2rBAc_HwoPeWAcAWUAR5tWHAxx-UXClSZQ9TMFK850gQGenUp8","e":"AQAB"}]}'
-EOF
-```
-
-2. Save the token for "Bob"
-```
-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNvbG8tcHVibGljLWtleS0wMDEifQ.eyJpc3MiOiJzb2xvLmlvIiwib3JnIjoic29sby5pbyIsInN1YiI6ImJvYiIsInRlYW0iOiJvcHMiLCJleHAiOjIwNzQyNzQ5NTQsImxsbXMiOnsibWlzdHJhbGFpIjpbIm1pc3RyYWwtbGFyZ2UtbGF0ZXN0Il19fQ.GF_uyLpZSTT1DIvJeO_eish1WDjMaS4BQSifGQhqPRLjzu3nXtPkaBRjceAmJi9gKZYAzkT25MIrT42ZIe3bHilrd1yqittTPWrrM4sWDDeldnGsfU07DWJHyboNapYR-KZGImSmOYshJlzm1tT_Bjt3-RK3OBzYi90_wl0dyAl9D7wwDCzOD4MRGFpoMrws_OgVrcZQKcadvIsH8figPwN4mK1U_1mxuL08RWTu92xBcezEO4CdBaFTUbkYN66Y2vKSTyPCxg3fLtg1mvlzU1-Wgm2xZIiPiarQHt6Uq7v9ftgzwdUBQM1AYLvUVhCN6XkkR9OU3p0OXiqEDjAxcg
-```
-
-4. Open MCP Inspector and try to re-connect to the MCP Server. You'll see something similar to the below:
-```
-Connection Error - Check if your MCP server is running and proxy token is correct
-```
-
-4. Click on **Authentication**
-- Header Name: **Authorization**
-- Bearer Token: Bobs Token from step 2
-
-### Specify MCP Server Tool List
-
-You can specify what tools from an MCP Server you want exposed via your AI Gateway
-
-1. Create a policy that specifies no tools listed
-```
-kubectl apply -f- <<EOF
-apiVersion: gloo.solo.io/v1alpha1
-kind: GlooTrafficPolicy
-metadata:
-  name: jwt-rbac
-  namespace: gloo-system
-spec:
-  targetRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
-      name: mcp-backend
-  rbac:
-    policy:
-      matchExpressions:
-        - 'mcp.tool.name == ""'
-EOF
-```
-
-2. Disconnect and reconnect via the MCP Inspector and you should see no tools
-
-3. Update the policy to include the **multiply** tool
-
-```
-kubectl apply -f- <<EOF
-apiVersion: gloo.solo.io/v1alpha1
-kind: GlooTrafficPolicy
-metadata:
-  name: jwt-rbac
-  namespace: gloo-system
-spec:
-  targetRefs:
-    - group: gateway.kgateway.dev
-      kind: Backend
-      name: mcp-backend
-  rbac:
-    policy:
-      matchExpressions:
-        - 'mcp.tool.name == "multiply"'
-EOF
-```
-
 ### Connecting To Remote MCP Servers
 
 1. Create the github pat token environment variable:
@@ -434,6 +346,208 @@ kubectl get agents -n kagent
 ```
 
 5. Open the kagent UI, go to the UI, and ask: `What branches are available under `https://github.com/AdminTurnedDevOps/agentic-demo-repo``
+
+## MCP Server & Agent Security
+
+For the access policy sections, ztunnel in the Ambient Mesh enforces Access Policies. Because of that, you need to ensure that the Namespace you're setting access policies on are enrolled into the mesh.
+```
+kubectl label namespaces kagent istio.io/dataplane-mode=ambient
+```
+
+### Secure Connectivity To An MCP Server (StreamableHTTP)
+
+1. Add in a traffic policy for auth based on a JWT token
+```
+kubectl apply -f- <<EOF
+apiVersion: gloo.solo.io/v1alpha1
+kind: GlooTrafficPolicy
+metadata:
+  name: jwt
+  namespace: gloo-system
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: agentgateway
+  glooJWT:
+    beforeExtAuth:
+      providers:
+        selfminted:
+          issuer: solo.io
+          jwks:
+            local:
+              key: '{"keys":[{"kty":"RSA","kid":"solo-public-key-001","use":"sig","alg":"RS256","n":"AOfIaJMUm7564sWWNHaXt_hS8H0O1Ew59-nRqruMQosfQqa7tWne5lL3m9sMAkfa3Twx0LMN_7QqRDoztvV3Wa_JwbMzb9afWE-IfKIuDqkvog6s-xGIFNhtDGBTuL8YAQYtwCF7l49SMv-GqyLe-nO9yJW-6wIGoOqImZrCxjxXFzF6mTMOBpIODFj0LUZ54QQuDcD1Nue2LMLsUvGa7V1ZHsYuGvUqzvXFBXMmMS2OzGir9ckpUhrUeHDCGFpEM4IQnu-9U8TbAJxKE5Zp8Nikefr2ISIG2Hk1K2rBAc_HwoPeWAcAWUAR5tWHAxx-UXClSZQ9TMFK850gQGenUp8","e":"AQAB"}]}'
+EOF
+```
+
+2. Save the token for "Bob"
+```
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNvbG8tcHVibGljLWtleS0wMDEifQ.eyJpc3MiOiJzb2xvLmlvIiwib3JnIjoic29sby5pbyIsInN1YiI6ImJvYiIsInRlYW0iOiJvcHMiLCJleHAiOjIwNzQyNzQ5NTQsImxsbXMiOnsibWlzdHJhbGFpIjpbIm1pc3RyYWwtbGFyZ2UtbGF0ZXN0Il19fQ.GF_uyLpZSTT1DIvJeO_eish1WDjMaS4BQSifGQhqPRLjzu3nXtPkaBRjceAmJi9gKZYAzkT25MIrT42ZIe3bHilrd1yqittTPWrrM4sWDDeldnGsfU07DWJHyboNapYR-KZGImSmOYshJlzm1tT_Bjt3-RK3OBzYi90_wl0dyAl9D7wwDCzOD4MRGFpoMrws_OgVrcZQKcadvIsH8figPwN4mK1U_1mxuL08RWTu92xBcezEO4CdBaFTUbkYN66Y2vKSTyPCxg3fLtg1mvlzU1-Wgm2xZIiPiarQHt6Uq7v9ftgzwdUBQM1AYLvUVhCN6XkkR9OU3p0OXiqEDjAxcg
+```
+
+4. Open MCP Inspector and try to re-connect to the MCP Server. You'll see something similar to the below:
+```
+Connection Error - Check if your MCP server is running and proxy token is correct
+```
+
+4. Click on **Authentication**
+- Header Name: **Authorization**
+- Bearer Token: Bobs Token from step 2
+
+### Specify MCP Server Tool List
+
+You can specify what tools from an MCP Server you want exposed via your AI Gateway
+
+1. Create a policy that specifies no tools listed
+```
+kubectl apply -f- <<EOF
+apiVersion: gloo.solo.io/v1alpha1
+kind: GlooTrafficPolicy
+metadata:
+  name: jwt-rbac
+  namespace: gloo-system
+spec:
+  targetRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: mcp-backend
+  rbac:
+    policy:
+      matchExpressions:
+        - 'mcp.tool.name == ""'
+EOF
+```
+
+2. Disconnect and reconnect via the MCP Inspector and you should see no tools
+
+3. Update the policy to include the **multiply** tool
+
+```
+kubectl apply -f- <<EOF
+apiVersion: gloo.solo.io/v1alpha1
+kind: GlooTrafficPolicy
+metadata:
+  name: jwt-rbac
+  namespace: gloo-system
+spec:
+  targetRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: mcp-backend
+  rbac:
+    policy:
+      matchExpressions:
+        - 'mcp.tool.name == "multiply"'
+EOF
+```
+
+### Stop Agents From Using MCP Server Tools
+
+Does this work?
+*Only for MCP Servers with the kind `MCPServer` and not `RemoteMCPServer`
+
+1. Run the below:
+```
+kubectl apply -f - <<EOF
+apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: agent-database-access
+  namespace: kagent
+spec:
+  from:
+    subjects:
+    - kind: Agent
+      name: k8s-agent
+      namespace: kagent
+  targetRef:
+    kind: MCPServer
+    name: mcp-server-1
+    tools: ["k8s_annotate_resource", "k8s_apply_manifest", "k8s_describe_resource", "k8s_get_events", "k8s_get_pod_logs", "k8s_get_resource_yaml", "k8s_get_resources"]
+  action: DENY
+EOF
+```
+
+2. Run the following prompt:
+```
+Get Pod logs for kube-dns in kube-system namespace
+```
+
+### User Group Deny To MCP Tools
+
+Does this work?
+*Only for MCP Servers with the kind `MCPServer` and not `RemoteMCPServer`
+
+```
+kubectl apply -f - <<EOF
+apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: deny-access-to-tools
+  namespace: kagent
+spec:
+  from:
+    subjects:
+    - kind: UserGroup
+      name: admins
+      namespace: kagent
+  targetRef:
+    kind: MCPServer
+    name: mcp-server-1
+    tools: ["k8s_annotate_resource", "k8s_apply_manifest", "k8s_describe_resource", "k8s_get_events", "k8s_get_pod_logs", "k8s_get_resource_yaml", "k8s_get_resources"]
+  action: DENY
+EOF
+```
+
+Run the following prompt:
+```
+Get Pod logs for kube-dns in kube-system namespace
+```
+
+### User Group Access To Agents
+
+*does not work as of right now 12/24/2025*
+
+```
+kubectl apply -f - <<EOF
+apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: k8s-agent-support
+  namespace: kagent
+spec:
+  from:
+    subjects:
+    - kind: UserGroup
+      name: admins
+      namespace: kagent
+  targetRef:
+    kind: Agent
+    name: k8s-agent
+  action: DENY
+EOF
+```
+
+### Deny Agents To User Group
+
+```
+# Deny agents acting for an unauthorized user from accessing a sensitive agent
+apiVersion: policy.kagent-enterprise.solo.io/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: deny-unauthorized-user-to-sensitive-agent
+  namespace: policies
+spec:
+  from:
+    subjects:
+    - kind: UserGroup
+      name: admins
+      namespace: kagent
+  targetRef:
+    kind: Agent
+    name: sensitive-agent
+  action: DENY
+```
 
 
 ## Agentic Routing and Agent Creation/Management
